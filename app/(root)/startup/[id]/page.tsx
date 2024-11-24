@@ -4,7 +4,12 @@ import { client } from '@/sanity/lib/client';
 import { formatDate } from '@/lib/utils';
 import Link from "next/link";
 import Image from 'next/image';
+import markdownit from 'markdown-it';
+import { Suspense } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+import View from '@/components/View';
 
+const md = markdownit();
 
 export const experimental_ppr = true;
 
@@ -12,10 +17,10 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
     const id = (await params).id;
 
     const post = await client.fetch(STARTUP_BY_ID_QUERY, { id });
-    console.log('Post:', post); // Log the post object to inspect its structure
-
 
     if (!post) return notFound();
+
+    const parsedContent = md.render(post?.pitch || '');
 
     return (
         <>
@@ -47,9 +52,22 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                     </div>
 
                     <h3 className="text-30-bold">Details</h3>
-
+                    {parsedContent ? (
+                        <article
+                        className='prose max-w-4xl font-work-sans break-all'
+                            dangerouslySetInnerHTML={{ __html: parsedContent}}
+                        />
+                    ) : (
+                        <p className='no-result'>No details provided. Check back later!</p>
+                    )}
                 </div>
+                <hr className="divider"/>
+
             </section>
+
+            <Suspense fallback={<Skeleton className='view_skeleton'/>}>
+                <View id={id} />
+            </Suspense>
         </>
     )
 }
